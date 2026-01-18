@@ -1,6 +1,10 @@
 /**
  * Centralized environment accessor.
- * CRA only exposes env vars prefixed with REACT_APP_.
+ *
+ * Note:
+ * - CRA normally exposes only env vars prefixed with REACT_APP_.
+ * - This project is explicitly configured to read Supabase credentials from
+ *   SUPABASE_URL and SUPABASE_KEY (no prefix) as requested.
  */
 
 // PUBLIC_INTERFACE
@@ -17,9 +21,8 @@ export function getEnv() {
     featureFlags: process.env.REACT_APP_FEATURE_FLAGS,
     experimentsEnabled: process.env.REACT_APP_EXPERIMENTS_ENABLED,
 
-    // Note: CRA typically exposes only REACT_APP_* env vars at build time.
-    // This project may have custom env injection; we read SUPABASE_* as requested.
-    // Values can be undefined in local/dev (UI should still run).
+    // Supabase (no REACT_APP_ prefix per project requirement).
+    // Values may be undefined in local/dev; the UI should still run.
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseKey: process.env.SUPABASE_KEY
   };

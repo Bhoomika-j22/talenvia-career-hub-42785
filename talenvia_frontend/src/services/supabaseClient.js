@@ -5,9 +5,12 @@ import { getEnv } from "../config/env";
  * Supabase client bootstrap for the Talenvia frontend.
  *
  * This module intentionally:
- * - reads configuration from process.env via getEnv()
+ * - reads configuration from process.env
  * - does not hardcode any secrets
  * - provides a small helper surface area for pages/services to import
+ *
+ * Project requirement:
+ * - Use SUPABASE_URL and SUPABASE_KEY (no REACT_APP_ prefix).
  */
 
 const env = getEnv();
@@ -19,10 +22,7 @@ const supabaseAnonKey = env.supabaseKey;
  * Create the Supabase client only if configuration is present.
  * This keeps the UI usable even when Supabase is not configured.
  */
-const supabase =
-  supabaseUrl && supabaseAnonKey
-    ? createClient(supabaseUrl, supabaseAnonKey)
-    : null;
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 // PUBLIC_INTERFACE
 export function getSupabaseClient() {
@@ -42,7 +42,7 @@ export async function supabasePing() {
    * - { ok: true, sessionExists: boolean }
    * - { ok: false, error: string } when not configured or on errors.
    */
-  if (!supabase) {
+  if (!supabaseUrl || !supabaseAnonKey) {
     return {
       ok: false,
       error: "Supabase is not configured. Set SUPABASE_URL and SUPABASE_KEY."
