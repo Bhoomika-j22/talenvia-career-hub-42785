@@ -56,7 +56,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  /* Slightly bias header content to the right while keeping responsiveness intact */
+  padding: 0 16px 0 24px;
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--tv-border);
