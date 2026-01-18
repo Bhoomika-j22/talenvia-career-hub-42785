@@ -440,14 +440,19 @@ body {
 }
 
 .tv-howItWorksCard .tv-card__inner {
+  /* Keep content padding consistent, but allow the badge to sit at the far-left edge
+     (timeline-style) by letting the step row "eat" the left padding. */
   padding: 16px; /* equalize padding across cards */
 }
 
 .tv-howItWorksStepRow {
+  /* Timeline-style: badge column flush to the left edge of the card,
+     content aligned consistently to the right with equal spacing. */
   display: grid;
   grid-template-columns: 44px 1fr; /* consistent number column */
-  gap: 14px;
-  align-items: center; /* vertically center step number with content */
+  gap: 14px; /* equal badge -> content spacing */
+  align-items: center; /* vertically center badge with content */
+  margin-left: -16px; /* pull badge to the far-left edge inside the card */
 }
 
 .tv-howItWorksStepNumber {
@@ -484,6 +489,7 @@ body {
   .tv-howItWorksStepRow {
     grid-template-columns: 42px 1fr;
     gap: 12px;
+    margin-left: -16px; /* keep badge at far-left edge on mobile too */
   }
 
   .tv-howItWorksStepNumber {
