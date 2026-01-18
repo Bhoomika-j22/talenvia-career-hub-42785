@@ -9,6 +9,10 @@ import { SUPABASE_URL, SUPABASE_KEY, isSupabaseConfigured, maskedDebug } from ".
  * - Provide a clear "isSupabaseConfigured" flag (boolean export)
  * - Avoid leaking secrets; only masked info may be logged and only in dev
  * - Work across CRA (process.env), Vite (import.meta.env), and runtime injected env (window.__ENV)
+ *
+ * IMPORTANT:
+ * - This module must never reference `process` or `import.meta` unguarded at runtime.
+ *   All environment detection is delegated to src/config/env.js which is browser-safe.
  */
 
 let supabase = null;
@@ -16,6 +20,7 @@ let supabase = null;
 // Initialize at module load so callers can use a stable singleton.
 if (isSupabaseConfigured) {
   supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  // Tiny masked debug line (dev-only behavior is inside maskedDebug)
   maskedDebug("Supabase client initialized.");
 } else {
   maskedDebug("Supabase client not initialized (missing/invalid config).");

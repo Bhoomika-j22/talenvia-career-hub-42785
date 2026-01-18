@@ -1,16 +1,17 @@
 /**
- * Bundler-agnostic environment accessor for Talenvia.
+ * Bundler-agnostic, browser-safe environment accessor for Talenvia.
+ *
+ * Primary goal: avoid any unguarded runtime reference to `process` in the browser
+ * (or `import.meta` in toolchains that don't support it).
  *
  * Supported env providers (in priority order for Supabase only):
  *  1) window.__ENV?.SUPABASE_URL / window.__ENV?.SUPABASE_KEY (runtime injected)
- *  2) process.env.SUPABASE_URL / process.env.SUPABASE_KEY (Node/Cra build-time)
- *  3) import.meta.env.VITE_SUPABASE_URL / import.meta.env.VITE_SUPABASE_KEY (Vite)
- *  4) import.meta.env.SUPABASE_URL / import.meta.env.SUPABASE_KEY
- *  5) process.env.VITE_SUPABASE_URL / process.env.VITE_SUPABASE_KEY
+ *  2) import.meta.env.* (Vite-style)
+ *  3) guarded process.env.* (Node/Cra build-time or polyfilled env)
  *
  * Notes:
- * - CRA normally only exposes REACT_APP_* variables; however the request explicitly
- *   supports SUPABASE_* and VITE_SUPABASE_* too.
+ * - CRA normally only exposes REACT_APP_* variables; this app also supports
+ *   SUPABASE_* and VITE_SUPABASE_* for compatibility with different pipelines.
  * - We NEVER log secrets. maskedDebug() logs only masked snapshots, and only in dev.
  */
 
@@ -51,8 +52,8 @@ function getImportMetaEnvSafe() {
 
 function getProcessEnvSafe() {
   try {
-    // `process` may not exist in some bundlers unless polyfilled.
-    if (typeof process !== "undefined" && process?.env) return process.env;
+    // `process` may not exist in the browser unless polyfilled.
+    if (typeof process !== "undefined" && process && process.env) return process.env;
   } catch {
     // ignore
   }
@@ -61,7 +62,7 @@ function getProcessEnvSafe() {
 
 function getWindowEnvSafe() {
   try {
-    if (typeof window !== "undefined" && window?.__ENV) return window.__ENV;
+    if (typeof window !== "undefined" && window && window.__ENV) return window.__ENV;
   } catch {
     // ignore
   }
@@ -77,8 +78,14 @@ function maskSecret(value) {
 
 function isDevLike() {
   // Prefer explicitly set NODE_ENV values; fall back to "localhost-ish" heuristics.
+  const meta = getImportMetaEnvSafe();
   const env = getProcessEnvSafe();
-  const nodeEnv = normalizeString(env?.NODE_ENV) || normalizeString(env?.REACT_APP_NODE_ENV);
+
+  const nodeEnv =
+    normalizeString(meta?.MODE) ||
+    normalizeString(env?.NODE_ENV) ||
+    normalizeString(env?.REACT_APP_NODE_ENV) ||
+    normalizeString(env?.VITE_NODE_ENV);
 
   if (nodeEnv) return nodeEnv !== "production";
 
@@ -91,8 +98,8 @@ function isDevLike() {
 
 function pickFirstSupabaseProvider() {
   const win = getWindowEnvSafe();
-  const proc = getProcessEnvSafe();
   const meta = getImportMetaEnvSafe();
+  const proc = getProcessEnvSafe();
 
   // 1) window.__ENV
   const wUrl = normalizeString(win?.SUPABASE_URL);
@@ -101,32 +108,34 @@ function pickFirstSupabaseProvider() {
     return { SUPABASE_URL: wUrl, SUPABASE_KEY: wKey, source: "window.__ENV" };
   }
 
-  // 2) process.env
-  const pUrl = normalizeString(proc?.SUPABASE_URL);
-  const pKey = normalizeString(proc?.SUPABASE_KEY);
-  if (pUrl || pKey) {
-    return { SUPABASE_URL: pUrl, SUPABASE_KEY: pKey, source: "process.env" };
-  }
-
-  // 3) import.meta.env VITE_*
-  const vUrl = normalizeString(meta?.VITE_SUPABASE_URL);
-  const vKey = normalizeString(meta?.VITE_SUPABASE_KEY);
+  // 2) import.meta.env (prefer VITE_* then non-prefixed)
+  const vUrl = normalizeString(meta?.VITE_SUPABASE_URL) || normalizeString(meta?.SUPABASE_URL);
+  const vKey = normalizeString(meta?.VITE_SUPABASE_KEY) || normalizeString(meta?.SUPABASE_KEY);
   if (vUrl || vKey) {
-    return { SUPABASE_URL: vUrl, SUPABASE_KEY: vKey, source: "import.meta.env(VITE_*)" };
+    return {
+      SUPABASE_URL: vUrl,
+      SUPABASE_KEY: vKey,
+      source: normalizeString(meta?.VITE_SUPABASE_URL) || normalizeString(meta?.VITE_SUPABASE_KEY) ? "import.meta.env(VITE_*)" : "import.meta.env"
+    };
   }
 
-  // 4) import.meta.env non-prefixed
-  const mUrl = normalizeString(meta?.SUPABASE_URL);
-  const mKey = normalizeString(meta?.SUPABASE_KEY);
-  if (mUrl || mKey) {
-    return { SUPABASE_URL: mUrl, SUPABASE_KEY: mKey, source: "import.meta.env" };
-  }
+  // 3) guarded process.env (support CRA REACT_APP_* first, then SUPABASE_*, then VITE_*)
+  const pUrl =
+    normalizeString(proc?.REACT_APP_SUPABASE_URL) ||
+    normalizeString(proc?.SUPABASE_URL) ||
+    normalizeString(proc?.VITE_SUPABASE_URL);
 
-  // 5) process.env VITE_*
-  const pvUrl = normalizeString(proc?.VITE_SUPABASE_URL);
-  const pvKey = normalizeString(proc?.VITE_SUPABASE_KEY);
-  if (pvUrl || pvKey) {
-    return { SUPABASE_URL: pvUrl, SUPABASE_KEY: pvKey, source: "process.env(VITE_*)" };
+  const pKey =
+    normalizeString(proc?.REACT_APP_SUPABASE_KEY) ||
+    normalizeString(proc?.SUPABASE_KEY) ||
+    normalizeString(proc?.VITE_SUPABASE_KEY);
+
+  if (pUrl || pKey) {
+    return {
+      SUPABASE_URL: pUrl,
+      SUPABASE_KEY: pKey,
+      source: "process.env"
+    };
   }
 
   return { SUPABASE_URL: undefined, SUPABASE_KEY: undefined, source: "none" };
@@ -153,7 +162,10 @@ export function getEnv() {
     backendUrl: normalizeString(proc?.REACT_APP_BACKEND_URL) || normalizeString(meta?.VITE_BACKEND_URL),
     frontendUrl: normalizeString(proc?.REACT_APP_FRONTEND_URL) || normalizeString(meta?.VITE_FRONTEND_URL),
     wsUrl: normalizeString(proc?.REACT_APP_WS_URL) || normalizeString(meta?.VITE_WS_URL),
-    nodeEnv: normalizeString(proc?.REACT_APP_NODE_ENV) || normalizeString(proc?.NODE_ENV) || normalizeString(meta?.MODE),
+    nodeEnv:
+      normalizeString(proc?.REACT_APP_NODE_ENV) ||
+      normalizeString(proc?.NODE_ENV) ||
+      normalizeString(meta?.MODE),
     logLevel: normalizeString(proc?.REACT_APP_LOG_LEVEL) || normalizeString(meta?.VITE_LOG_LEVEL),
     healthcheckPath: normalizeString(proc?.REACT_APP_HEALTHCHECK_PATH) || normalizeString(meta?.VITE_HEALTHCHECK_PATH),
     featureFlags: normalizeString(proc?.REACT_APP_FEATURE_FLAGS) || normalizeString(meta?.VITE_FEATURE_FLAGS),
@@ -191,7 +203,7 @@ export function maskedDebug(extraMessage) {
   const msg = extraMessage ? ` ${String(extraMessage)}` : "";
 
   // eslint-disable-next-line no-console
-  console.info(
+  console.debug(
     `[Env] supabaseConfigured=${isSupabaseConfigured} source=${_env.source} url=${urlSample} key=${keyMasked}${msg}`.trim()
   );
 }

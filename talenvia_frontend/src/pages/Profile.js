@@ -9,6 +9,10 @@ import { supabase, isSupabaseConfigured } from "../services/supabaseClient";
  * - Skills as removable tags
  * - Professional links with basic URL validation
  * - Save action persists to Supabase tables: profiles, professional_links, skills (when configured + signed in)
+ *
+ * IMPORTANT:
+ * - This page must not reference `process` (or other bundler globals) at runtime.
+ * - It relies on `isSupabaseConfigured` from supabaseClient/env for environment detection.
  */
 
 const STORAGE_KEY = "talenvia.profile.v1";
