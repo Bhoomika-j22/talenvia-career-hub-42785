@@ -1,47 +1,43 @@
-import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import "./App.css";
+
+import { AppLayout } from "./layout/AppLayout";
+import { HomePage } from "./pages/Home";
+import { ProfilePage } from "./pages/Profile";
+import { MockTestsPage } from "./pages/MockTests";
+import { ChallengesPage } from "./pages/Challenges";
+import { SettingsPage } from "./pages/Settings";
+import { AboutPage } from "./pages/About";
+import { HowItWorksPage } from "./pages/HowItWorks";
+import { NotFoundPage } from "./pages/NotFound";
+
+/**
+ * App entry for Talenvia frontend:
+ * - Elegant themed layout shell
+ * - Side drawer + header nav
+ * - Scaffold routes/pages
+ */
 
 // PUBLIC_INTERFACE
 function App() {
-  const [theme, setTheme] = useState('light');
-
-  // Effect to apply theme to document element
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
-  // PUBLIC_INTERFACE
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
-  };
-
+  /** Main application component for Talenvia. */
   return (
     <div className="App">
-      <header className="App-header">
-        <button 
-          className="theme-toggle" 
-          onClick={toggleTheme}
-          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-        >
-          {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
-        </button>
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <p>
-          Current theme: <strong>{theme}</strong>
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route index element={<HomePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/mock-tests" element={<MockTestsPage />} />
+            <Route path="/challenges" element={<ChallengesPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/how-it-works" element={<HowItWorksPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
     </div>
   );
 }
