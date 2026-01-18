@@ -227,15 +227,6 @@ export function ProfilePage() {
           >
             Upload Resume
           </Button>
-
-          <Button
-            variant="primary"
-            onClick={onSave}
-            disabled={isSaveDisabled}
-            aria-disabled={isSaveDisabled ? "true" : "false"}
-          >
-            Save
-          </Button>
         </div>
       </header>
 
@@ -470,6 +461,18 @@ export function ProfilePage() {
               ) : null}
             </div>
           </div>
+        </div>
+
+        {/* Save action is last element in the single-section profile editor */}
+        <div className="tv-row" style={{ marginTop: 16, justifyContent: "flex-end" }}>
+          <Button
+            variant="primary"
+            onClick={onSave}
+            disabled={isSaveDisabled}
+            aria-disabled={isSaveDisabled ? "true" : "false"}
+          >
+            Save
+          </Button>
         </div>
       </section>
     </div>
