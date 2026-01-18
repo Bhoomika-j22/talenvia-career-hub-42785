@@ -129,9 +129,10 @@ body {
   width: min(560px, 46vw); /* slightly smaller to fit next to brand */
   max-width: 560px;
 
-  /* Shift ONLY the search to the right (~1 inch ≈ 96px on typical DPI).
-     Clamp keeps responsiveness: no shift on very small screens, max 96px on desktop. */
-  margin-left: clamp(0px, 6vw, 96px);
+  /* Shift ONLY the search to the right.
+     Requirement: move it ~96px further right than current position.
+     Clamp keeps responsiveness: no shift on very small screens, max 192px on desktop. */
+  margin-left: clamp(0px, 6vw, 192px);
 }
 
 .tv-headerSearch__input {
