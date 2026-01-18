@@ -36,38 +36,16 @@ const STEPS = [
 
 function StepCard({ stepNumber, title, description }) {
   return (
-    <article className="tv-card" aria-label={`Step ${stepNumber}: ${title}`}>
+    <article className="tv-card tv-howItWorksCard" aria-label={`Step ${stepNumber}: ${title}`}>
       <div className="tv-card__inner">
-        <div
-          className="tv-row"
-          style={{ alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}
-        >
-          <div className="tv-row" style={{ alignItems: "flex-start", gap: 12 }}>
-            <div
-              aria-hidden="true"
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 14,
-                display: "grid",
-                placeItems: "center",
-                fontWeight: 900,
-                letterSpacing: "-0.02em",
-                color: "white",
-                background: "linear-gradient(135deg, rgba(244, 114, 182, 1), rgba(223, 188, 129, 0.95))",
-                boxShadow: "0 14px 30px rgba(244, 114, 182, 0.22)",
-                flex: "0 0 auto"
-              }}
-            >
-              {stepNumber}
-            </div>
+        <div className="tv-howItWorksStepRow">
+          <div className="tv-howItWorksStepNumber" aria-hidden="true">
+            {stepNumber}
+          </div>
 
-            <div style={{ minWidth: 0 }}>
-              <h2 style={{ margin: "2px 0 6px", fontSize: 18, letterSpacing: "-0.02em" }}>{title}</h2>
-              <p className="tv-muted" style={{ margin: 0, lineHeight: 1.65 }}>
-                {description}
-              </p>
-            </div>
+          <div style={{ minWidth: 0 }}>
+            <h2 className="tv-howItWorksStepTitle">{title}</h2>
+            <p className="tv-muted tv-howItWorksStepDesc">{description}</p>
           </div>
         </div>
       </div>
@@ -80,26 +58,24 @@ export function HowItWorksPage() {
   /** Explains the Talenvia user journey in clear, step-based cards. */
   return (
     <div className="tv-grid" style={{ gap: 14 }}>
-      <header className="tv-pageHeader">
-        <div>
+      <header className="tv-pageHeader tv-howItWorksHeader">
+        <div className="tv-howItWorksHeader__text">
           <h1 className="tv-pageTitle">How Talenvia Works</h1>
           <p className="tv-pageSubtitle">
             A clear, step-by-step journey—from building your profile to improving your job readiness.
           </p>
         </div>
-        <Button as={NavLink} to="/" variant="primary">
-          Explore Jobs
-        </Button>
+
+        <div className="tv-howItWorksHeader__actions">
+          <Button as={NavLink} to="/" variant="primary">
+            Explore Jobs
+          </Button>
+        </div>
       </header>
 
-      <section aria-label="How Talenvia Works steps" className="tv-grid" style={{ gap: 12 }}>
+      <section aria-label="How Talenvia Works steps" className="tv-howItWorksSteps">
         {STEPS.map((s, idx) => (
-          <StepCard
-            key={s.title}
-            stepNumber={idx + 1}
-            title={s.title}
-            description={s.description}
-          />
+          <StepCard key={s.title} stepNumber={idx + 1} title={s.title} description={s.description} />
         ))}
       </section>
 

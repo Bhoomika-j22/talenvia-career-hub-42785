@@ -415,6 +415,83 @@ body {
   gap: 6px 12px;
 }
 
+/* -----------------------------------------
+   How It Works page polish (alignment/spacing)
+   ----------------------------------------- */
+.tv-howItWorksHeader {
+  align-items: center; /* align title/subtitle block with button */
+}
+
+.tv-howItWorksHeader__text {
+  min-width: 0;
+}
+
+.tv-howItWorksHeader__actions {
+  display: flex;
+  align-items: center;
+}
+
+.tv-howItWorksSteps {
+  display: grid;
+  gap: 12px; /* remove uneven gaps; consistent flow */
+  width: 100%;
+  max-width: 920px; /* unified card width for consistent scan */
+  margin: 0 auto; /* center the flow in the main content column */
+}
+
+.tv-howItWorksCard .tv-card__inner {
+  padding: 16px; /* equalize padding across cards */
+}
+
+.tv-howItWorksStepRow {
+  display: grid;
+  grid-template-columns: 44px 1fr; /* consistent number column */
+  gap: 14px;
+  align-items: center; /* vertically center step number with content */
+}
+
+.tv-howItWorksStepNumber {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: white;
+  background: linear-gradient(135deg, rgba(244, 114, 182, 1), rgba(223, 188, 129, 0.95));
+  box-shadow: 0 14px 30px rgba(244, 114, 182, 0.22);
+}
+
+.tv-howItWorksStepTitle {
+  margin: 0 0 6px;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.tv-howItWorksStepDesc {
+  margin: 0;
+  line-height: 1.65;
+}
+
+/* Keep the steps "flow" consistent on small screens too */
+@media (max-width: 520px) {
+  .tv-howItWorksSteps {
+    max-width: 100%;
+  }
+
+  .tv-howItWorksStepRow {
+    grid-template-columns: 42px 1fr;
+    gap: 12px;
+  }
+
+  .tv-howItWorksStepNumber {
+    width: 42px;
+    height: 42px;
+  }
+}
+
 @media (max-width: 520px) {
   .tv-kv {
     grid-template-columns: 1fr;
