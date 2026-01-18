@@ -31,11 +31,23 @@ function normalizeSkill(s) {
   return s.trim().replace(/\s+/g, " ");
 }
 
+function isValidEmailMinimal(value) {
+  // Minimal email check (not RFC strict). Good enough for UI gating.
+  const v = value.trim();
+  if (!v) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+
+function trimmedOrEmpty(value) {
+  return (value || "").trim();
+}
+
 // PUBLIC_INTERFACE
 export function ProfilePage() {
   /** Profile page with local-only editable details and temporary persistence. */
 
   const fileInputRef = useRef(null);
+  const saveNoticeTimerRef = useRef(null);
 
   const initialProfile = useMemo(() => {
     try {
@@ -56,25 +68,33 @@ export function ProfilePage() {
 
   const [profile, setProfile] = useState(initialProfile);
 
-  // Persist on any state change to meet acceptance criteria (refresh retains changes).
-  useEffect(() => {
+  const [saveNotice, setSaveNotice] = useState("");
+  const [hasTriedSave, setHasTriedSave] = useState(false);
+
+  // Centralized payload to persist (reused by effect + Save button).
+  const persistProfileToLocalStorage = (nextProfile) => {
     try {
       window.localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
-          photoDataUrl: profile.photoDataUrl,
-          fullName: profile.fullName,
-          phone: profile.phone,
-          email: profile.email,
-          location: profile.location,
-          skills: profile.skills,
-          linkedInUrl: profile.linkedInUrl,
-          githubUrl: profile.githubUrl
+          photoDataUrl: nextProfile.photoDataUrl,
+          fullName: nextProfile.fullName,
+          phone: nextProfile.phone,
+          email: nextProfile.email,
+          location: nextProfile.location,
+          skills: nextProfile.skills,
+          linkedInUrl: nextProfile.linkedInUrl,
+          githubUrl: nextProfile.githubUrl
         })
       );
     } catch {
       // If storage fails (quota/private mode), we silently continue without persistence.
     }
+  };
+
+  // Persist on any state change to meet acceptance criteria (refresh retains changes).
+  useEffect(() => {
+    persistProfileToLocalStorage(profile);
   }, [
     profile.photoDataUrl,
     profile.fullName,
@@ -86,8 +106,22 @@ export function ProfilePage() {
     profile.githubUrl
   ]);
 
+  useEffect(() => {
+    // Cleanup save notice timer on unmount.
+    return () => {
+      if (saveNoticeTimerRef.current) window.clearTimeout(saveNoticeTimerRef.current);
+    };
+  }, []);
+
   const linkedInInvalid = !isLikelyHttpUrl(profile.linkedInUrl);
   const githubInvalid = !isLikelyHttpUrl(profile.githubUrl);
+
+  // Required fields validation.
+  const fullNameMissing = trimmedOrEmpty(profile.fullName).length === 0;
+  const emailInvalid = !isValidEmailMinimal(profile.email);
+
+  // Disable Save when invalid (also respects existing URL invalid states so we never "save" invalid links).
+  const isSaveDisabled = fullNameMissing || emailInvalid || linkedInInvalid || githubInvalid;
 
   const canAddSkill = profile.skillDraft.trim().length > 0;
 
@@ -129,15 +163,51 @@ export function ProfilePage() {
     reader.readAsDataURL(file);
   };
 
+  const showSavedNotice = () => {
+    setSaveNotice("Saved");
+    if (saveNoticeTimerRef.current) window.clearTimeout(saveNoticeTimerRef.current);
+    saveNoticeTimerRef.current = window.setTimeout(() => {
+      setSaveNotice("");
+    }, 2500);
+  };
+
+  const onSave = () => {
+    setHasTriedSave(true);
+
+    if (isSaveDisabled) {
+      // Focus first invalid field for keyboard accessibility.
+      if (fullNameMissing) {
+        document.getElementById("tvProfileFullName")?.focus?.();
+      } else if (emailInvalid) {
+        document.getElementById("tvProfileEmail")?.focus?.();
+      } else if (linkedInInvalid) {
+        document.getElementById("tvLinkedInUrl")?.focus?.();
+      } else if (githubInvalid) {
+        document.getElementById("tvGithubUrl")?.focus?.();
+      }
+      return;
+    }
+
+    // Explicit persistence (reuses same logic as autosave effect).
+    persistProfileToLocalStorage(profile);
+    showSavedNotice();
+  };
+
   return (
     <div className="tv-grid" style={{ gap: 14 }}>
       <header className="tv-pageHeader">
         <div>
           <h1 className="tv-pageTitle">User Profile</h1>
           <p className="tv-pageSubtitle">Manage your personal details, skills, and professional links</p>
+
+          {saveNotice ? (
+            <div className="tv-saveNotice" role="status" aria-live="polite">
+              {saveNotice}
+            </div>
+          ) : null}
         </div>
 
-        <div className="tv-row">
+        <div className="tv-row tv-profileHeaderActions">
           <Button
             variant="primary"
             onClick={() => {
@@ -156,6 +226,15 @@ export function ProfilePage() {
             }}
           >
             Upload Resume
+          </Button>
+
+          <Button
+            variant="primary"
+            onClick={onSave}
+            disabled={isSaveDisabled}
+            aria-disabled={isSaveDisabled ? "true" : "false"}
+          >
+            Save
           </Button>
         </div>
       </header>
@@ -211,7 +290,7 @@ export function ProfilePage() {
             <div className="tv-grid tv-grid--2">
               <div>
                 <label className="tv-profileLabel" htmlFor="tvProfileFullName">
-                  Full name
+                  Full name <span className="tv-muted tv-small">(required)</span>
                 </label>
                 <input
                   id="tvProfileFullName"
@@ -220,7 +299,13 @@ export function ProfilePage() {
                   onChange={(e) => setProfile((p) => ({ ...p, fullName: e.target.value }))}
                   placeholder="e.g., Jordan Candidate"
                   autoComplete="name"
+                  aria-invalid={hasTriedSave && fullNameMissing ? "true" : "false"}
                 />
+                {hasTriedSave && fullNameMissing ? (
+                  <div className="tv-fieldError" role="alert">
+                    Full name is required.
+                  </div>
+                ) : null}
               </div>
 
               <div>
@@ -240,7 +325,7 @@ export function ProfilePage() {
 
               <div>
                 <label className="tv-profileLabel" htmlFor="tvProfileEmail">
-                  Email
+                  Email <span className="tv-muted tv-small">(required)</span>
                 </label>
                 <input
                   id="tvProfileEmail"
@@ -250,7 +335,13 @@ export function ProfilePage() {
                   onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
                   placeholder="e.g., jordan@email.com"
                   autoComplete="email"
+                  aria-invalid={hasTriedSave && emailInvalid ? "true" : "false"}
                 />
+                {hasTriedSave && emailInvalid ? (
+                  <div className="tv-fieldError" role="alert">
+                    Please enter a valid email address.
+                  </div>
+                ) : null}
               </div>
 
               <div>
