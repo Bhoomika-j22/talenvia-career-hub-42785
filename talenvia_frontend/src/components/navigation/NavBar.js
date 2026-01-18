@@ -22,7 +22,9 @@ export function NavBar() {
           </span>
           <span className="tv-brand__name">Talenvia</span>
         </Link>
+      </div>
 
+      <div className="tv-header__right">
         <div className="tv-headerSearch" role="search" aria-label="Search jobs">
           <label htmlFor="tvHeaderJobSearch" className="tv-srOnly">
             Search jobs
@@ -55,9 +57,6 @@ export function NavBar() {
           </button>
         </div>
       </div>
-
-      {/* Intentionally empty: header navigation links removed per user request. */}
-      <div className="tv-header__right" />
     </header>
   );
 }

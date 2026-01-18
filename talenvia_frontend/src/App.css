@@ -111,7 +111,9 @@ body {
 .tv-header__right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
+  min-width: 0;
 }
 
 /* Header search (global) */
@@ -119,7 +121,8 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: min(520px, 46vw);
+  min-width: 0; /* allow it to shrink within the right side */
+  width: min(600px, 46vw);
   max-width: 600px;
 }
 
@@ -171,11 +174,29 @@ body {
   border: 0;
 }
 
-/* On smaller screens, let search shrink to fit */
+/* On smaller screens, let the header wrap and keep search usable */
 @media (max-width: 520px) {
+  .tv-header {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: var(--tv-header-h);
+    padding-top: 10px;
+    padding-bottom: 10px;
+    row-gap: 10px;
+  }
+
+  .tv-header__left,
+  .tv-header__right {
+    width: 100%;
+  }
+
+  .tv-header__right {
+    justify-content: flex-start; /* align with content flow on narrow screens */
+  }
+
   .tv-headerSearch {
-    min-width: 0;
-    max-width: 46vw;
+    width: 100%;
+    max-width: 100%;
   }
 }
 
