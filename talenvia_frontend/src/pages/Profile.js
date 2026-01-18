@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../components/ui/Button";
-import { getSupabaseClient, isSupabaseConfigured, logSupabaseEnvDebug } from "../services/supabaseClient";
+import { supabase, isSupabaseConfigured } from "../services/supabaseClient";
 
 /**
  * User profile page:
@@ -8,7 +8,7 @@ import { getSupabaseClient, isSupabaseConfigured, logSupabaseEnvDebug } from "..
  * - Editable avatar (file input + preview)
  * - Skills as removable tags
  * - Professional links with basic URL validation
- * - Save action persists to Supabase tables: profiles, professional_links, skills
+ * - Save action persists to Supabase tables: profiles, professional_links, skills (when configured + signed in)
  */
 
 const STORAGE_KEY = "talenvia.profile.v1";
@@ -187,18 +187,8 @@ export function ProfilePage() {
       return;
     }
 
-    // If Supabase isn't configured, explicitly tell the user and keep local save behavior.
-    if (!isSupabaseConfigured()) {
-      setSaveBlockingReason("not_configured");
-      showNotice("Saved locally.");
-      persistProfileToLocalStorage(profile);
-      return;
-    }
-
-    // If Supabase is configured but client is still null, log debug snapshot for diagnosis.
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      logSupabaseEnvDebug();
+    // If Supabase isn't configured, keep local save behavior (no "false negative" here).
+    if (!isSupabaseConfigured || !supabase) {
       setSaveBlockingReason("not_configured");
       showNotice("Saved locally.");
       persistProfileToLocalStorage(profile);
@@ -276,9 +266,6 @@ export function ProfilePage() {
 
       showNotice("Saved");
     } catch (e) {
-      // Helpful debug hint without leaking secrets.
-      logSupabaseEnvDebug();
-
       // User-friendly error; avoid leaking internals.
       showNotice("Could not save profile. Please try again.");
     } finally {
