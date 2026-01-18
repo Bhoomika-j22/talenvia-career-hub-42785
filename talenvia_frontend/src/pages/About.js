@@ -14,6 +14,9 @@ export function AboutPage() {
         <div>
           <h1 className="tv-pageTitle">About Talenvia</h1>
           <p className="tv-pageSubtitle">
+            Helping early-career professionals build strong profiles and move forward with clarity.
+          </p>
+          <p className="tv-pageSubtitle">
             Talenvia helps you build a credible career profile, highlight your skills, and find the right opportunities
             faster.
           </p>
