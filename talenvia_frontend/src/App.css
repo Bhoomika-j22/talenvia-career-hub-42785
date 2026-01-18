@@ -130,9 +130,8 @@ body {
   max-width: 560px;
 
   /* Shift ONLY the search to the right.
-     Requirement: move it ~96px further right than current position.
-     Clamp keeps responsiveness: no shift on very small screens, max 192px on desktop. */
-  margin-left: clamp(0px, 6vw, 192px);
+     Clamp keeps responsiveness: no shift on very small screens, max shift on desktop. */
+  margin-left: clamp(0px, 7vw, 220px);
 }
 
 .tv-headerSearch__input {
