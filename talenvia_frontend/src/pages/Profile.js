@@ -316,15 +316,6 @@ export function ProfilePage() {
           >
             Edit Profile
           </Button>
-
-          <Button
-            variant="ghost"
-            onClick={() => {
-              fileInputRef.current?.click?.();
-            }}
-          >
-            Upload Resume
-          </Button>
         </div>
       </header>
 
