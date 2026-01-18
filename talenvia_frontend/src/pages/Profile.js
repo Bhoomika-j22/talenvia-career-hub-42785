@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../components/ui/Button";
-import { getSupabaseClient } from "../services/supabaseClient";
+import { getSupabaseClient, isSupabaseConfigured, logSupabaseEnvDebug } from "../services/supabaseClient";
 
 /**
  * User profile page:
@@ -73,6 +73,9 @@ export function ProfilePage() {
   const [saveNotice, setSaveNotice] = useState("");
   const [hasTriedSave, setHasTriedSave] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Used to render a small inline notice separate from the transient "Saved" pill.
+  const [saveBlockingReason, setSaveBlockingReason] = useState(""); // "not_configured" | "not_signed_in" | ""
 
   // Centralized payload to persist (reused by effect + Save button).
   const persistProfileToLocalStorage = (nextProfile) => {
@@ -168,6 +171,7 @@ export function ProfilePage() {
   const onSave = async () => {
     setHasTriedSave(true);
     setSaveNotice("");
+    setSaveBlockingReason("");
 
     if (isSaveDisabled) {
       // Focus first invalid field for keyboard accessibility.
@@ -183,10 +187,20 @@ export function ProfilePage() {
       return;
     }
 
+    // If Supabase isn't configured, explicitly tell the user and keep local save behavior.
+    if (!isSupabaseConfigured()) {
+      setSaveBlockingReason("not_configured");
+      showNotice("Saved locally.");
+      persistProfileToLocalStorage(profile);
+      return;
+    }
+
+    // If Supabase is configured but client is still null, log debug snapshot for diagnosis.
     const supabase = getSupabaseClient();
     if (!supabase) {
-      // Keep local cache behavior; but show user we can't persist remotely.
-      showNotice("Supabase is not configured. Saved locally.");
+      logSupabaseEnvDebug();
+      setSaveBlockingReason("not_configured");
+      showNotice("Saved locally.");
       persistProfileToLocalStorage(profile);
       return;
     }
@@ -198,7 +212,8 @@ export function ProfilePage() {
 
       const userId = userData?.user?.id;
       if (!userId) {
-        showNotice("You must be signed in to save your profile.");
+        setSaveBlockingReason("not_signed_in");
+        showNotice("Cannot save to cloud.");
         return;
       }
 
@@ -242,9 +257,7 @@ export function ProfilePage() {
         new Set(profile.skills.map((s) => normalizeSkill(s)).filter((s) => !!s).map((s) => s.toLowerCase()))
       ).map((lower) => {
         // Preserve a nice-looking value: use the first matching original skill, otherwise use the lowercase value.
-        const original =
-          profile.skills.find((s) => normalizeSkill(s).toLowerCase() === lower) ||
-          lower;
+        const original = profile.skills.find((s) => normalizeSkill(s).toLowerCase() === lower) || lower;
         return normalizeSkill(original);
       });
 
@@ -258,11 +271,14 @@ export function ProfilePage() {
         if (insertSkillsError) throw insertSkillsError;
       }
 
-      // Keep localStorage in sync as a UI cache (optional, but requested as allowed).
+      // Keep localStorage in sync as a UI cache (optional).
       persistProfileToLocalStorage(profile);
 
       showNotice("Saved");
     } catch (e) {
+      // Helpful debug hint without leaking secrets.
+      logSupabaseEnvDebug();
+
       // User-friendly error; avoid leaking internals.
       showNotice("Could not save profile. Please try again.");
     } finally {
@@ -280,6 +296,20 @@ export function ProfilePage() {
           {saveNotice ? (
             <div className="tv-saveNotice" role="status" aria-live="polite">
               {saveNotice}
+            </div>
+          ) : null}
+
+          {saveBlockingReason === "not_configured" ? (
+            <div className="tv-muted tv-small" style={{ marginTop: 10 }}>
+              Cloud save is unavailable because Supabase is not configured for this environment. Your changes are stored
+              locally in this browser.
+            </div>
+          ) : null}
+
+          {saveBlockingReason === "not_signed_in" ? (
+            <div className="tv-muted tv-small" style={{ marginTop: 10 }}>
+              Supabase is configured, but you are not signed in. Sign in to save your profile to the cloud (your changes
+              are still stored locally as a cache).
             </div>
           ) : null}
         </div>
