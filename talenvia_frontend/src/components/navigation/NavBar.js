@@ -8,7 +8,11 @@ export function NavBar() {
     <header className="tv-header">
       <div className="tv-header__left">
         <Link className="tv-brand" to="/" aria-label="Talenvia Home">
-          <span className="tv-brand__mark" aria-hidden="true" />
+          <span className="tv-brand__mark" aria-hidden="true">
+            <span className="tv-brand__markLetter" aria-hidden="true">
+              T
+            </span>
+          </span>
           <span className="tv-brand__name">Talenvia</span>
         </Link>
       </div>
