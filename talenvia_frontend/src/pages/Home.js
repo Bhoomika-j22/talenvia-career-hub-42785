@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
 import { listJobs } from "../services/mockJobs";
+import { useJobsSearch } from "../context/JobsSearchContext";
 
 /**
  * Home page: Job listings + quick filters (mock).
@@ -10,20 +11,10 @@ import { listJobs } from "../services/mockJobs";
 // PUBLIC_INTERFACE
 export function HomePage() {
   /** Home page showing job listings from mock service. */
-  const [searchInput, setSearchInput] = useState("");
-  const [query, setQuery] = useState("");
+  const { searchInput, setSearchInput, query, clear } = useJobsSearch();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState(null);
-
-  // Debounce: keep UI responsive while avoiding "network" thrash from mock latency.
-  useEffect(() => {
-    const t = window.setTimeout(() => {
-      setQuery(searchInput);
-    }, 250);
-
-    return () => window.clearTimeout(t);
-  }, [searchInput]);
 
   const stats = useMemo(() => {
     const total = jobs.length;
@@ -80,15 +71,7 @@ export function HomePage() {
                 inputMode="search"
               />
 
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setSearchInput("");
-                  setQuery("");
-                }}
-                disabled={!searchInput && !query}
-                aria-disabled={!searchInput && !query ? "true" : "false"}
-              >
+              <Button variant="ghost" onClick={clear} disabled={!searchInput && !query} aria-disabled={!searchInput && !query ? "true" : "false"}>
                 Clear
               </Button>
             </div>
