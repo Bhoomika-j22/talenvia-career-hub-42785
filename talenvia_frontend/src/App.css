@@ -56,9 +56,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* Bias header content to the right while keeping responsiveness intact.
-     Target: ~1 inch visual shift on common desktop DPI (~96px). */
-  padding: 0 16px 0 clamp(32px, 6vw, 96px);
+
+  /* Keep header layout neutral; do NOT bias the whole header cluster.
+     We will shift ONLY the brand/logo area separately. */
+  padding: 0 16px;
+
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--tv-border);
@@ -77,6 +79,10 @@ body {
   gap: 10px;
   text-decoration: none;
   color: var(--tv-text);
+
+  /* Shift ONLY the brand/logo to the left (~1 inch ≈ 96px on desktop DPI).
+     Clamp makes it responsive (no big negative offset on small screens). */
+  margin-left: clamp(-96px, -6vw, 0px);
 }
 
 .tv-brand__mark {
