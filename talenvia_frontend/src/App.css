@@ -56,8 +56,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* Slightly bias header content to the right while keeping responsiveness intact */
-  padding: 0 16px 0 32px;
+  /* Bias header content to the right while keeping responsiveness intact.
+     Target: ~1 inch visual shift on common desktop DPI (~96px). */
+  padding: 0 16px 0 clamp(32px, 6vw, 96px);
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--tv-border);
