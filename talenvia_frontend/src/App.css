@@ -131,7 +131,7 @@ body {
 
   /* Shift ONLY the search to the right.
      Clamp keeps responsiveness: no shift on very small screens, max shift on desktop. */
-  margin-left: clamp(0px, 8vw, 280px);
+  margin-left: clamp(0px, 8vw, 300px);
 }
 
 .tv-headerSearch__input {
