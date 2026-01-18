@@ -36,51 +36,49 @@ export function AboutPage() {
         </div>
       </Card>
 
-      <div className="tv-grid tv-grid--2">
-        <Card title="Key features">
-          <div style={{ display: "grid", gap: 12 }}>
-            <div>
-              <div style={{ fontWeight: 800, letterSpacing: "-0.01em" }}>Profile & skill management</div>
-              <p className="tv-muted" style={{ margin: "6px 0 0", lineHeight: 1.65 }}>
-                Maintain a structured profile that highlights your strengths. Organize skills clearly so recruiters and
-                roles align with what you can actually deliver.
-              </p>
-            </div>
-
-            <div>
-              <div style={{ fontWeight: 800, letterSpacing: "-0.01em" }}>Resume upload and updates</div>
-              <p className="tv-muted" style={{ margin: "6px 0 0", lineHeight: 1.65 }}>
-                Keep your latest resume ready without rework. Update documents as you learn, build projects, and gain
-                experience—so every application reflects your current story.
-              </p>
-            </div>
-
-            <div>
-              <div style={{ fontWeight: 800, letterSpacing: "-0.01em" }}>Job discovery and matching</div>
-              <p className="tv-muted" style={{ margin: "6px 0 0", lineHeight: 1.65 }}>
-                Find opportunities that fit your skills, level, and interests. Matching helps reduce noise so you spend
-                time applying to roles that are relevant.
-              </p>
-            </div>
-
-            <div>
-              <div style={{ fontWeight: 800, letterSpacing: "-0.01em" }}>Career preferences & personalization</div>
-              <p className="tv-muted" style={{ margin: "6px 0 0", lineHeight: 1.65 }}>
-                Set what matters to you—locations, role types, and focus areas—and get recommendations that stay aligned
-                as your goals evolve.
-              </p>
-            </div>
-
-            <div>
-              <div style={{ fontWeight: 800, letterSpacing: "-0.01em" }}>AI-driven guidance and recommendations</div>
-              <p className="tv-muted" style={{ margin: "6px 0 0", lineHeight: 1.65 }}>
-                Receive practical suggestions to improve readiness, from role-aligned skills to next steps. Guidance is
-                designed to help you progress with clarity and consistency.
-              </p>
-            </div>
+      <Card title="Key features">
+        <div style={{ display: "grid", gap: 12 }}>
+          <div>
+            <div style={{ fontWeight: 800, letterSpacing: "-0.01em" }}>Profile & skill management</div>
+            <p className="tv-muted" style={{ margin: "6px 0 0", lineHeight: 1.65 }}>
+              Maintain a structured profile that highlights your strengths. Organize skills clearly so recruiters and
+              roles align with what you can actually deliver.
+            </p>
           </div>
-        </Card>
-      </div>
+
+          <div>
+            <div style={{ fontWeight: 800, letterSpacing: "-0.01em" }}>Resume upload and updates</div>
+            <p className="tv-muted" style={{ margin: "6px 0 0", lineHeight: 1.65 }}>
+              Keep your latest resume ready without rework. Update documents as you learn, build projects, and gain
+              experience—so every application reflects your current story.
+            </p>
+          </div>
+
+          <div>
+            <div style={{ fontWeight: 800, letterSpacing: "-0.01em" }}>Job discovery and matching</div>
+            <p className="tv-muted" style={{ margin: "6px 0 0", lineHeight: 1.65 }}>
+              Find opportunities that fit your skills, level, and interests. Matching helps reduce noise so you spend
+              time applying to roles that are relevant.
+            </p>
+          </div>
+
+          <div>
+            <div style={{ fontWeight: 800, letterSpacing: "-0.01em" }}>Career preferences & personalization</div>
+            <p className="tv-muted" style={{ margin: "6px 0 0", lineHeight: 1.65 }}>
+              Set what matters to you—locations, role types, and focus areas—and get recommendations that stay aligned
+              as your goals evolve.
+            </p>
+          </div>
+
+          <div>
+            <div style={{ fontWeight: 800, letterSpacing: "-0.01em" }}>AI-driven guidance and recommendations</div>
+            <p className="tv-muted" style={{ margin: "6px 0 0", lineHeight: 1.65 }}>
+              Receive practical suggestions to improve readiness, from role-aligned skills to next steps. Guidance is
+              designed to help you progress with clarity and consistency.
+            </p>
+          </div>
+        </div>
+      </Card>
 
       <Card title="Our promise">
         <p className="tv-muted" style={{ marginTop: 0, lineHeight: 1.65 }}>
