@@ -1,10 +1,9 @@
-import React, { useMemo, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import React, { useState } from "react";
+import { Outlet } from "react-router-dom";
 import { NavBar } from "../components/navigation/NavBar";
 import { SideDrawer } from "../components/navigation/SideDrawer";
 import { Modal } from "../components/ui/Modal";
 import { Button } from "../components/ui/Button";
-import { getEnv } from "../config/env";
 
 /**
  * App layout shell: header + responsive drawer + main content + global modal pattern.
@@ -15,9 +14,6 @@ export function AppLayout() {
   /** Shared app layout wrapper used for all main routes. */
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [quickActionOpen, setQuickActionOpen] = useState(false);
-  const location = useLocation();
-
-  const env = useMemo(() => getEnv(), []);
 
   return (
     <div className="tv-shell">
@@ -34,16 +30,6 @@ export function AppLayout() {
 
         <main className="tv-main" aria-label="Main content">
           <Outlet />
-          <div style={{ marginTop: 18 }} className="tv-muted tv-small">
-            <div className="tv-kv">
-              <div>Route</div>
-              <div>{location.pathname}</div>
-              <div>API Base</div>
-              <div>{env.apiBase || "— (not set)"}</div>
-              <div>Backend URL</div>
-              <div>{env.backendUrl || "— (not set)"}</div>
-            </div>
-          </div>
         </main>
       </div>
 
