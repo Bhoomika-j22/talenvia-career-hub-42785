@@ -46,13 +46,13 @@ export function AboutPage() {
             <li>AI-driven guidance through mentor-like insights and role suggestions</li>
           </ul>
         </Card>
-
-        <Card title="Our promise">
-          <p className="tv-muted" style={{ marginTop: 0, lineHeight: 1.65 }}>
-            Talenvia is designed to be a trusted companion for steady growth and long-term career success.
-          </p>
-        </Card>
       </div>
+
+      <Card title="Our promise">
+        <p className="tv-muted" style={{ marginTop: 0, lineHeight: 1.65 }}>
+          Talenvia is designed to be a trusted companion for steady growth and long-term career success.
+        </p>
+      </Card>
     </div>
   );
 }
