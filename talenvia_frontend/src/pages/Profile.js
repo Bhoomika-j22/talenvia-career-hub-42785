@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../components/ui/Button";
+import { getSupabaseClient } from "../services/supabaseClient";
 
 /**
  * User profile page:
- * - Local-only form state with localStorage persistence
+ * - Local-only form state with localStorage persistence (kept as cache/fallback)
  * - Editable avatar (file input + preview)
  * - Skills as removable tags
  * - Professional links with basic URL validation
+ * - Save action persists to Supabase tables: profiles, professional_links, skills
  */
 
 const STORAGE_KEY = "talenvia.profile.v1";
@@ -44,7 +46,7 @@ function trimmedOrEmpty(value) {
 
 // PUBLIC_INTERFACE
 export function ProfilePage() {
-  /** Profile page with local-only editable details and temporary persistence. */
+  /** Profile page with editable details and local cache + Supabase persistence on Save. */
 
   const fileInputRef = useRef(null);
   const saveNoticeTimerRef = useRef(null);
@@ -70,6 +72,7 @@ export function ProfilePage() {
 
   const [saveNotice, setSaveNotice] = useState("");
   const [hasTriedSave, setHasTriedSave] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Centralized payload to persist (reused by effect + Save button).
   const persistProfileToLocalStorage = (nextProfile) => {
@@ -92,19 +95,10 @@ export function ProfilePage() {
     }
   };
 
-  // Persist on any state change to meet acceptance criteria (refresh retains changes).
+  // Persist on any state change (cache) so refresh retains changes even if Supabase is unavailable.
   useEffect(() => {
     persistProfileToLocalStorage(profile);
-  }, [
-    profile.photoDataUrl,
-    profile.fullName,
-    profile.phone,
-    profile.email,
-    profile.location,
-    profile.skills,
-    profile.linkedInUrl,
-    profile.githubUrl
-  ]);
+  }, [profile]);
 
   useEffect(() => {
     // Cleanup save notice timer on unmount.
@@ -154,7 +148,7 @@ export function ProfilePage() {
     if (!file) return;
     if (!file.type?.startsWith("image/")) return;
 
-    // Convert to data URL for preview + localStorage persistence (small images recommended).
+    // Convert to data URL for preview + localStorage cache (small images recommended).
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = typeof reader.result === "string" ? reader.result : "";
@@ -163,16 +157,17 @@ export function ProfilePage() {
     reader.readAsDataURL(file);
   };
 
-  const showSavedNotice = () => {
-    setSaveNotice("Saved");
+  const showNotice = (message) => {
+    setSaveNotice(message);
     if (saveNoticeTimerRef.current) window.clearTimeout(saveNoticeTimerRef.current);
     saveNoticeTimerRef.current = window.setTimeout(() => {
       setSaveNotice("");
     }, 2500);
   };
 
-  const onSave = () => {
+  const onSave = async () => {
     setHasTriedSave(true);
+    setSaveNotice("");
 
     if (isSaveDisabled) {
       // Focus first invalid field for keyboard accessibility.
@@ -188,9 +183,91 @@ export function ProfilePage() {
       return;
     }
 
-    // Explicit persistence (reuses same logic as autosave effect).
-    persistProfileToLocalStorage(profile);
-    showSavedNotice();
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      // Keep local cache behavior; but show user we can't persist remotely.
+      showNotice("Supabase is not configured. Saved locally.");
+      persistProfileToLocalStorage(profile);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+
+      const userId = userData?.user?.id;
+      if (!userId) {
+        showNotice("You must be signed in to save your profile.");
+        return;
+      }
+
+      const nowIso = new Date().toISOString();
+
+      // --- Supabase persistence ---
+      // 1) Upsert profiles (one row per user, keyed by user_id)
+      const { error: profileError } = await supabase.from("profiles").upsert(
+        {
+          user_id: userId,
+          full_name: trimmedOrEmpty(profile.fullName),
+          email: trimmedOrEmpty(profile.email),
+          phone_number: trimmedOrEmpty(profile.phone) || null,
+          location: trimmedOrEmpty(profile.location) || null,
+          profile_photo_url: trimmedOrEmpty(profile.photoDataUrl) || null,
+          updated_at: nowIso
+        },
+        { onConflict: "user_id" }
+      );
+      if (profileError) throw profileError;
+
+      // 2) Upsert professional_links (one row per user)
+      // Portfolio is not currently in the UI; send null to match schema.
+      const { error: linksError } = await supabase.from("professional_links").upsert(
+        {
+          user_id: userId,
+          linkedin_url: trimmedOrEmpty(profile.linkedInUrl) || null,
+          github_url: trimmedOrEmpty(profile.githubUrl) || null,
+          portfolio_url: null,
+          updated_at: nowIso
+        },
+        { onConflict: "user_id" }
+      );
+      if (linksError) throw linksError;
+
+      // 3) Sync skills: delete then insert unique skill rows.
+      const { error: deleteSkillsError } = await supabase.from("skills").delete().eq("user_id", userId);
+      if (deleteSkillsError) throw deleteSkillsError;
+
+      const uniqueSkillNames = Array.from(
+        new Set(profile.skills.map((s) => normalizeSkill(s)).filter((s) => !!s).map((s) => s.toLowerCase()))
+      ).map((lower) => {
+        // Preserve a nice-looking value: use the first matching original skill, otherwise use the lowercase value.
+        const original =
+          profile.skills.find((s) => normalizeSkill(s).toLowerCase() === lower) ||
+          lower;
+        return normalizeSkill(original);
+      });
+
+      if (uniqueSkillNames.length > 0) {
+        const rows = uniqueSkillNames.map((skillName) => ({
+          user_id: userId,
+          skill_name: skillName
+        }));
+
+        const { error: insertSkillsError } = await supabase.from("skills").insert(rows);
+        if (insertSkillsError) throw insertSkillsError;
+      }
+
+      // Keep localStorage in sync as a UI cache (optional, but requested as allowed).
+      persistProfileToLocalStorage(profile);
+
+      showNotice("Saved");
+    } catch (e) {
+      // User-friendly error; avoid leaking internals.
+      showNotice("Could not save profile. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -468,10 +545,10 @@ export function ProfilePage() {
           <Button
             variant="primary"
             onClick={onSave}
-            disabled={isSaveDisabled}
-            aria-disabled={isSaveDisabled ? "true" : "false"}
+            disabled={isSaveDisabled || isSaving}
+            aria-disabled={isSaveDisabled || isSaving ? "true" : "false"}
           >
-            Save
+            {isSaving ? "Saving..." : "Save"}
           </Button>
         </div>
       </section>
