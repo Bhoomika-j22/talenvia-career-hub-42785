@@ -435,8 +435,8 @@ body {
   display: grid;
   gap: 8px; /* tighter vertical rhythm so steps feel like one continuous flow */
   width: 100%;
-  max-width: 920px; /* unified card width for consistent scan */
-  margin: 0 auto; /* center the flow in the main content column */
+  max-width: none; /* allow full available width of the main content area */
+  margin: 0; /* no centering; follow the main column width naturally */
 }
 
 .tv-howItWorksCard .tv-card__inner {
