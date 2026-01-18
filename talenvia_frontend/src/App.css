@@ -450,7 +450,7 @@ body {
      content aligned consistently to the right with equal spacing. */
   display: grid;
   grid-template-columns: 44px 1fr; /* consistent number column */
-  gap: 14px; /* equal badge -> content spacing */
+  gap: 18px; /* badge -> content spacing (slightly increased for readability) */
   align-items: center; /* vertically center badge with content */
   margin-left: -16px; /* pull badge to the far-left edge inside the card */
 }
@@ -488,7 +488,7 @@ body {
 
   .tv-howItWorksStepRow {
     grid-template-columns: 42px 1fr;
-    gap: 12px;
+    gap: 14px;
     margin-left: -16px; /* keep badge at far-left edge on mobile too */
   }
 
