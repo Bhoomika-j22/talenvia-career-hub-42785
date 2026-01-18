@@ -2,6 +2,8 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 
 const MENU = [
+  // Jobs/Home: Job listings live on the Home page route in this scaffold.
+  { to: "/", label: "Jobs", icon: "💼" },
   { to: "/", label: "Home", icon: "🏷️" },
   { to: "/profile", label: "User Profile", icon: "👤" },
   { to: "/mock-tests", label: "Mock Tests", icon: "📝" },
