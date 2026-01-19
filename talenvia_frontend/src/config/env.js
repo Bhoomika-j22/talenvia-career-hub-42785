@@ -74,6 +74,10 @@ export function getEnv() {
     healthcheckPath: normalizeString(proc?.REACT_APP_HEALTHCHECK_PATH) || normalizeString(meta?.VITE_HEALTHCHECK_PATH),
     featureFlags: normalizeString(proc?.REACT_APP_FEATURE_FLAGS) || normalizeString(meta?.VITE_FEATURE_FLAGS),
     experimentsEnabled:
-      normalizeString(proc?.REACT_APP_EXPERIMENTS_ENABLED) || normalizeString(meta?.VITE_EXPERIMENTS_ENABLED)
+      normalizeString(proc?.REACT_APP_EXPERIMENTS_ENABLED) || normalizeString(meta?.VITE_EXPERIMENTS_ENABLED),
+
+    // Supabase
+    supabaseUrl: normalizeString(proc?.REACT_APP_SUPABASE_URL) || normalizeString(meta?.VITE_SUPABASE_URL),
+    supabaseKey: normalizeString(proc?.REACT_APP_SUPABASE_KEY) || normalizeString(meta?.VITE_SUPABASE_KEY)
   };
 }
