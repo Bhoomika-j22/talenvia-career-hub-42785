@@ -46,11 +46,21 @@ export function getFirebaseConfig() {
   return buildFirebaseConfigFromEnv(env);
 }
 
+/**
+ * Prefer the single source of truth from env.js, but keep a fallback so this module
+ * remains robust if env.js changes in the future.
+ */
+function isFirebaseConfiguredFromEnv(env) {
+  if (typeof env?.firebaseConfigured === "boolean") return env.firebaseConfigured;
+  const cfg = buildFirebaseConfigFromEnv(env || {});
+  return isFirebaseConfigComplete(cfg);
+}
+
 // PUBLIC_INTERFACE
 export function isFirebaseConfigured() {
   /** True if required Firebase env vars are present. */
-  const cfg = getFirebaseConfig();
-  return isFirebaseConfigComplete(cfg);
+  const env = getEnv();
+  return isFirebaseConfiguredFromEnv(env);
 }
 
 // PUBLIC_INTERFACE
