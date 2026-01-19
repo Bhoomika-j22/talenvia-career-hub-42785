@@ -1,18 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../components/ui/Button";
+import { loadProfile, saveProfile } from "../services/profileStore";
 
 /**
- * User profile page (local-only):
- * - Local form state with localStorage persistence
+ * User profile page:
+ * - Local form state
+ * - Loads from Firestore when configured (fallbacks to local cache/default)
+ * - Saves via Firestore upsert (with read-through local cache)
  * - Editable avatar (file input + preview)
  * - Skills as removable tags
  * - Professional links with basic URL validation
  *
  * IMPORTANT:
- * - Supabase has been removed from this frontend. All saves are localStorage-only.
+ * - UI text/content is kept intact.
+ * - localStorage is no longer the primary persistence layer; it is only used as a read-through cache/migration fallback.
  */
-
-const STORAGE_KEY = "talenvia.profile.v1";
 
 const DEFAULT_PROFILE = {
   photoDataUrl: "",
@@ -47,63 +49,19 @@ function trimmedOrEmpty(value) {
 
 // PUBLIC_INTERFACE
 export function ProfilePage() {
-  /** Profile page with editable details and localStorage persistence. */
+  /** Profile page with editable details and Firestore persistence (fallback to cache). */
 
   const fileInputRef = useRef(null);
   const saveNoticeTimerRef = useRef(null);
 
-  const initialProfile = useMemo(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) return DEFAULT_PROFILE;
-      const parsed = JSON.parse(raw);
-
-      // Defensive merge to handle older/partial saved shapes.
-      return {
-        ...DEFAULT_PROFILE,
-        ...parsed,
-        skills: Array.isArray(parsed?.skills) ? parsed.skills : []
-      };
-    } catch {
-      return DEFAULT_PROFILE;
-    }
-  }, []);
-
-  const [profile, setProfile] = useState(initialProfile);
+  const [profile, setProfile] = useState(DEFAULT_PROFILE);
 
   const [saveNotice, setSaveNotice] = useState("");
   const [hasTriedSave, setHasTriedSave] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const persistProfileToLocalStorage = (nextProfile) => {
-    try {
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          photoDataUrl: nextProfile.photoDataUrl,
-          fullName: nextProfile.fullName,
-          phone: nextProfile.phone,
-          email: nextProfile.email,
-          location: nextProfile.location,
-          skills: nextProfile.skills,
-          linkedInUrl: nextProfile.linkedInUrl,
-          githubUrl: nextProfile.githubUrl
-        })
-      );
-    } catch {
-      // If storage fails (quota/private mode), we silently continue without persistence.
-    }
-  };
-
-  useEffect(() => {
-    persistProfileToLocalStorage(profile);
-  }, [profile]);
-
-  useEffect(() => {
-    return () => {
-      if (saveNoticeTimerRef.current) window.clearTimeout(saveNoticeTimerRef.current);
-    };
-  }, []);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   const linkedInInvalid = !isLikelyHttpUrl(profile.linkedInUrl);
   const githubInvalid = !isLikelyHttpUrl(profile.githubUrl);
@@ -114,6 +72,37 @@ export function ProfilePage() {
   const isSaveDisabled = fullNameMissing || emailInvalid || linkedInInvalid || githubInvalid;
 
   const canAddSkill = profile.skillDraft.trim().length > 0;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function runLoad() {
+      setIsLoading(true);
+      setLoadError("");
+      try {
+        const res = await loadProfile();
+        if (cancelled) return;
+        setProfile(res?.profile ? { ...DEFAULT_PROFILE, ...res.profile } : DEFAULT_PROFILE);
+      } catch {
+        if (cancelled) return;
+        setLoadError("Failed to load profile. Using local data if available.");
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    runLoad();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (saveNoticeTimerRef.current) window.clearTimeout(saveNoticeTimerRef.current);
+    };
+  }, []);
 
   const addSkill = () => {
     const next = normalizeSkill(profile.skillDraft);
@@ -178,12 +167,34 @@ export function ProfilePage() {
 
     setIsSaving(true);
     try {
-      persistProfileToLocalStorage(profile);
-      showNotice("Saved");
+      const res = await saveProfile(profile);
+
+      if (res?.ok) {
+        showNotice("Saved");
+      } else {
+        // Keep UX graceful. Avoid changing existing UI copy beyond this notice.
+        showNotice(res?.error ? `Error: ${res.error}` : "Error: Failed to save");
+      }
     } finally {
       setIsSaving(false);
     }
   };
+
+  const headerRight = useMemo(() => {
+    return (
+      <div className="tv-row tv-profileHeaderActions">
+        <Button
+          variant="primary"
+          onClick={() => {
+            const el = document.getElementById("tvProfileFullName");
+            el?.focus?.();
+          }}
+        >
+          Edit Profile
+        </Button>
+      </div>
+    );
+  }, []);
 
   return (
     <div className="tv-grid" style={{ gap: 14 }}>
@@ -192,24 +203,22 @@ export function ProfilePage() {
           <h1 className="tv-pageTitle">User Profile</h1>
           <p className="tv-pageSubtitle">Manage your personal details, skills, and professional links</p>
 
-          {saveNotice ? (
+          {isLoading ? (
+            <div className="tv-saveNotice" role="status" aria-live="polite">
+              Loading...
+            </div>
+          ) : saveNotice ? (
             <div className="tv-saveNotice" role="status" aria-live="polite">
               {saveNotice}
+            </div>
+          ) : loadError ? (
+            <div className="tv-saveNotice" role="status" aria-live="polite">
+              {loadError}
             </div>
           ) : null}
         </div>
 
-        <div className="tv-row tv-profileHeaderActions">
-          <Button
-            variant="primary"
-            onClick={() => {
-              const el = document.getElementById("tvProfileFullName");
-              el?.focus?.();
-            }}
-          >
-            Edit Profile
-          </Button>
-        </div>
+        {headerRight}
       </header>
 
       <section className="tv-profileSection" aria-label="Profile details">
