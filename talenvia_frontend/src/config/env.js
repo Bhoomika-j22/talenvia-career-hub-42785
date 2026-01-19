@@ -74,6 +74,21 @@ export function getEnv() {
     healthcheckPath: normalizeString(proc?.REACT_APP_HEALTHCHECK_PATH) || normalizeString(meta?.VITE_HEALTHCHECK_PATH),
     featureFlags: normalizeString(proc?.REACT_APP_FEATURE_FLAGS) || normalizeString(meta?.VITE_FEATURE_FLAGS),
     experimentsEnabled:
-      normalizeString(proc?.REACT_APP_EXPERIMENTS_ENABLED) || normalizeString(meta?.VITE_EXPERIMENTS_ENABLED)
+      normalizeString(proc?.REACT_APP_EXPERIMENTS_ENABLED) || normalizeString(meta?.VITE_EXPERIMENTS_ENABLED),
+
+    // Firebase (web app config) – kept optional so behavior doesn't change until features use it.
+    firebaseApiKey: normalizeString(proc?.REACT_APP_FIREBASE_API_KEY) || normalizeString(meta?.VITE_FIREBASE_API_KEY),
+    firebaseAuthDomain:
+      normalizeString(proc?.REACT_APP_FIREBASE_AUTH_DOMAIN) || normalizeString(meta?.VITE_FIREBASE_AUTH_DOMAIN),
+    firebaseProjectId:
+      normalizeString(proc?.REACT_APP_FIREBASE_PROJECT_ID) || normalizeString(meta?.VITE_FIREBASE_PROJECT_ID),
+    firebaseStorageBucket:
+      normalizeString(proc?.REACT_APP_FIREBASE_STORAGE_BUCKET) || normalizeString(meta?.VITE_FIREBASE_STORAGE_BUCKET),
+    firebaseMessagingSenderId:
+      normalizeString(proc?.REACT_APP_FIREBASE_MESSAGING_SENDER_ID) ||
+      normalizeString(meta?.VITE_FIREBASE_MESSAGING_SENDER_ID),
+    firebaseAppId: normalizeString(proc?.REACT_APP_FIREBASE_APP_ID) || normalizeString(meta?.VITE_FIREBASE_APP_ID),
+    firebaseMeasurementId:
+      normalizeString(proc?.REACT_APP_FIREBASE_MEASUREMENT_ID) || normalizeString(meta?.VITE_FIREBASE_MEASUREMENT_ID)
   };
 }
