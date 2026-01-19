@@ -5,15 +5,15 @@ import { loadProfile, saveProfile } from "../services/profileStore";
 /**
  * User profile page:
  * - Local form state
- * - Loads from Firestore when configured (fallbacks to local cache/default)
- * - Saves via Firestore upsert (with read-through local cache)
+ * - Loads from localStorage (best-effort)
+ * - Saves to localStorage
  * - Editable avatar (file input + preview)
  * - Skills as removable tags
  * - Professional links with basic URL validation
  *
  * IMPORTANT:
  * - UI text/content is kept intact.
- * - localStorage is no longer the primary persistence layer; it is only used as a read-through cache/migration fallback.
+ * - Persistence is local-only in this scaffold.
  */
 
 const DEFAULT_PROFILE = {

@@ -54,20 +54,6 @@ function getProcessEnvSafe() {
   return undefined;
 }
 
-function isNonEmptyString(v) {
-  return typeof v === "string" && v.trim().length > 0;
-}
-
-function computeFirebaseConfigured(env) {
-  // Minimum required for typical Firebase Web SDK usage.
-  return (
-    isNonEmptyString(env.firebaseApiKey) &&
-    isNonEmptyString(env.firebaseAuthDomain) &&
-    isNonEmptyString(env.firebaseProjectId) &&
-    isNonEmptyString(env.firebaseAppId)
-  );
-}
-
 // PUBLIC_INTERFACE
 export function getEnv() {
   /**
@@ -78,7 +64,7 @@ export function getEnv() {
   const proc = getProcessEnvSafe();
   const meta = getImportMetaEnvSafe();
 
-  const env = {
+  return {
     apiBase: normalizeString(proc?.REACT_APP_API_BASE) || normalizeString(meta?.VITE_API_BASE),
     backendUrl: normalizeString(proc?.REACT_APP_BACKEND_URL) || normalizeString(meta?.VITE_BACKEND_URL),
     frontendUrl: normalizeString(proc?.REACT_APP_FRONTEND_URL) || normalizeString(meta?.VITE_FRONTEND_URL),
@@ -88,28 +74,6 @@ export function getEnv() {
     healthcheckPath: normalizeString(proc?.REACT_APP_HEALTHCHECK_PATH) || normalizeString(meta?.VITE_HEALTHCHECK_PATH),
     featureFlags: normalizeString(proc?.REACT_APP_FEATURE_FLAGS) || normalizeString(meta?.VITE_FEATURE_FLAGS),
     experimentsEnabled:
-      normalizeString(proc?.REACT_APP_EXPERIMENTS_ENABLED) || normalizeString(meta?.VITE_EXPERIMENTS_ENABLED),
-
-    // Firebase (web app config)
-    firebaseApiKey: normalizeString(proc?.REACT_APP_FIREBASE_API_KEY) || normalizeString(meta?.VITE_FIREBASE_API_KEY),
-    firebaseAuthDomain:
-      normalizeString(proc?.REACT_APP_FIREBASE_AUTH_DOMAIN) || normalizeString(meta?.VITE_FIREBASE_AUTH_DOMAIN),
-    firebaseProjectId:
-      normalizeString(proc?.REACT_APP_FIREBASE_PROJECT_ID) || normalizeString(meta?.VITE_FIREBASE_PROJECT_ID),
-    firebaseStorageBucket:
-      normalizeString(proc?.REACT_APP_FIREBASE_STORAGE_BUCKET) || normalizeString(meta?.VITE_FIREBASE_STORAGE_BUCKET),
-    firebaseMessagingSenderId:
-      normalizeString(proc?.REACT_APP_FIREBASE_MESSAGING_SENDER_ID) ||
-      normalizeString(meta?.VITE_FIREBASE_MESSAGING_SENDER_ID),
-    firebaseAppId: normalizeString(proc?.REACT_APP_FIREBASE_APP_ID) || normalizeString(meta?.VITE_FIREBASE_APP_ID),
-    firebaseMeasurementId:
-      normalizeString(proc?.REACT_APP_FIREBASE_MEASUREMENT_ID) || normalizeString(meta?.VITE_FIREBASE_MEASUREMENT_ID)
-  };
-
-  return {
-    ...env,
-    // A single, canonical signal for app features to gate Firebase usage.
-    // Prevents false "firebase not configured" when vars are present.
-    firebaseConfigured: computeFirebaseConfigured(env)
+      normalizeString(proc?.REACT_APP_EXPERIMENTS_ENABLED) || normalizeString(meta?.VITE_EXPERIMENTS_ENABLED)
   };
 }
