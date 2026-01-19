@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useParams } from "react-router-dom";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { recordMockTestAttempt } from "../services/mockTestsStore";
+import { listMockTestsCatalog } from "../services/mockTestsData";
 
 /**
  * Lightweight mock test "runner" stub.
@@ -10,11 +11,7 @@ import { recordMockTestAttempt } from "../services/mockTestsStore";
  * to demonstrate the navigation to Results while using the existing localStorage store.
  */
 
-const TEST_CATALOG = [
-  { id: "react_fundamentals", title: "React Fundamentals", durationMin: 20, maxScore: 20 },
-  { id: "behavioral_star", title: "Behavioral STAR Practice", durationMin: 15, maxScore: 10 },
-  { id: "sql_basics", title: "SQL Basics", durationMin: 25, maxScore: 25 }
-];
+const TEST_CATALOG = listMockTestsCatalog();
 
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));

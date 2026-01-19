@@ -9,6 +9,7 @@ import {
   listMockTestSummaries,
   recordMockTestAttempt
 } from "../services/mockTestsStore";
+import { listMockTestsCatalog } from "../services/mockTestsData";
 
 /**
  * Mock tests page with local persistence:
@@ -16,11 +17,7 @@ import {
  * - shows last attempt + scores in UI
  */
 
-const TESTS = [
-  { id: "react_fundamentals", title: "React Fundamentals", durationMin: 20, maxScore: 20 },
-  { id: "behavioral_star", title: "Behavioral STAR Practice", durationMin: 15, maxScore: 10 },
-  { id: "sql_basics", title: "SQL Basics", durationMin: 25, maxScore: 25 }
-];
+const TESTS = listMockTestsCatalog();
 
 function scoreLabel(scoreObj) {
   if (!scoreObj) return "—";
@@ -135,7 +132,14 @@ export function MockTestsPage() {
           <Button variant="ghost" onClick={onClearAll} aria-label="Clear mock test history">
             Reset History
           </Button>
-          <Button variant="primary" onClick={() => setSelectedTestId(TESTS[0].id)}>
+          <Button
+            variant="primary"
+            onClick={() => {
+              if (TESTS.length > 0) setSelectedTestId(TESTS[0].id);
+            }}
+            disabled={TESTS.length === 0}
+            aria-disabled={TESTS.length === 0 ? "true" : "false"}
+          >
             Start New Test
           </Button>
         </div>

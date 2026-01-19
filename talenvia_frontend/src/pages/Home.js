@@ -1,43 +1,81 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
-import { listJobs } from "../services/mockJobs";
 import { useJobsSearch } from "../context/JobsSearchContext";
+import { getJobs } from "../services/jobsApi";
 
 /**
- * Home page: Job listings + quick filters (mock).
+ * Home page: Job listings + quick filters.
+ *
+ * Now connected to an HTTP API (with graceful mock fallback).
+ * Search remains client-side using the shared JobsSearchContext query.
  */
 
 // PUBLIC_INTERFACE
 export function HomePage() {
-  /** Home page showing job listings from mock service. */
+  /** Home page showing job listings from API (fallback to mock). */
   const { searchInput, setSearchInput, query, clear } = useJobsSearch();
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedJob, setSelectedJob] = useState(null);
 
-  const stats = useMemo(() => {
-    const total = jobs.length;
-    const remote = jobs.filter((j) => j.location.toLowerCase().includes("remote")).length;
-    return { total, remote };
-  }, [jobs]);
+  const [allJobs, setAllJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Non-blocking messaging: if we fall back to mock, show a subtle notice.
+  const [loadMessage, setLoadMessage] = useState("");
+
+  const [selectedJob, setSelectedJob] = useState(null);
 
   useEffect(() => {
     let canceled = false;
-    setLoading(true);
 
-    listJobs({ query })
-      .then((data) => {
-        if (!canceled) setJobs(data);
-      })
-      .finally(() => {
+    async function run() {
+      setLoading(true);
+      setLoadMessage("");
+
+      try {
+        const res = await getJobs();
+        if (canceled) return;
+
+        setAllJobs(Array.isArray(res?.jobs) ? res.jobs : []);
+
+        if (res?.usedFallback) {
+          // Keep it subtle; do not block the UI or remove mock behavior.
+          setLoadMessage(res?.error ? `Showing mock jobs: ${res.error}` : "Showing mock jobs (API unavailable).");
+        } else {
+          // Optional small status that API is used; keep quiet to avoid noise.
+          setLoadMessage("");
+        }
+      } catch (e) {
+        // Should be rare because getJobs already falls back, but keep resilient.
+        if (canceled) return;
+        setAllJobs([]);
+        setLoadMessage(e?.message ? String(e.message) : "Failed to load jobs.");
+      } finally {
         if (!canceled) setLoading(false);
-      });
+      }
+    }
+
+    run();
 
     return () => {
       canceled = true;
     };
-  }, [query]);
+  }, []);
+
+  const filteredJobs = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return allJobs;
+
+    return allJobs.filter((j) => {
+      const hay = `${j.title} ${j.company} ${j.location} ${(j.tags || []).join(" ")} ${j.type} ${j.level}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [allJobs, query]);
+
+  const stats = useMemo(() => {
+    const total = filteredJobs.length;
+    const remote = filteredJobs.filter((j) => String(j.location || "").toLowerCase().includes("remote")).length;
+    return { total, remote };
+  }, [filteredJobs]);
 
   const hasQuery = query.trim().length > 0;
 
@@ -47,8 +85,14 @@ export function HomePage() {
         <div style={{ minWidth: 0 }}>
           <h1 className="tv-pageTitle">Job Listings</h1>
           <p className="tv-pageSubtitle">
-            Discover roles curated for an elegant job search experience. Use search to filter mock listings.
+            Discover roles curated for an elegant job search experience. Use search to filter listings.
           </p>
+
+          {loadMessage ? (
+            <div className="tv-saveNotice" role="status" aria-live="polite">
+              {loadMessage}
+            </div>
+          ) : null}
 
           {/* Search is intentionally placed in the header area above listings (per request). */}
           <div style={{ marginTop: 12 }}>
@@ -71,7 +115,12 @@ export function HomePage() {
                 inputMode="search"
               />
 
-              <Button variant="ghost" onClick={clear} disabled={!searchInput && !query} aria-disabled={!searchInput && !query ? "true" : "false"}>
+              <Button
+                variant="ghost"
+                onClick={clear}
+                disabled={!searchInput && !query}
+                aria-disabled={!searchInput && !query ? "true" : "false"}
+              >
                 Clear
               </Button>
             </div>
@@ -99,7 +148,7 @@ export function HomePage() {
       </header>
 
       <div className="tv-grid tv-grid--2" aria-label="Job results">
-        {(loading ? Array.from({ length: 2 }).map((_, idx) => ({ id: `loading_${idx}` })) : jobs).map((job) =>
+        {(loading ? Array.from({ length: 2 }).map((_, idx) => ({ id: `loading_${idx}` })) : filteredJobs).map((job) =>
           loading ? (
             <div key={job.id} className="tv-card">
               <div className="tv-card__inner">
@@ -130,7 +179,7 @@ export function HomePage() {
                 </p>
 
                 <div className="tv-row" style={{ marginBottom: 10 }}>
-                  {job.tags.map((t) => (
+                  {(job.tags || []).map((t) => (
                     <span key={t} className="tv-chip">
                       {t}
                     </span>
@@ -151,12 +200,12 @@ export function HomePage() {
         )}
       </div>
 
-      {!loading && jobs.length === 0 ? (
+      {!loading && filteredJobs.length === 0 ? (
         <div className="tv-card" role="status" aria-live="polite">
           <div className="tv-card__inner">
             <div style={{ fontWeight: 900, letterSpacing: "-0.02em" }}>No results</div>
             <p className="tv-muted" style={{ margin: "6px 0 0", lineHeight: 1.6 }}>
-              Try a different keyword, or clear the search to see all mock listings.
+              Try a different keyword, or clear the search to see all listings.
             </p>
           </div>
         </div>
@@ -183,7 +232,7 @@ export function HomePage() {
               <strong>{selectedJob.company}</strong> • {selectedJob.location} • {selectedJob.type} • {selectedJob.level}
             </p>
             <div className="tv-row" style={{ marginBottom: 10 }}>
-              {selectedJob.tags.map((t) => (
+              {(selectedJob.tags || []).map((t) => (
                 <span key={t} className="tv-chip">
                   {t}
                 </span>

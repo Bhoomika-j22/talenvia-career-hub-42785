@@ -3,17 +3,14 @@ import { NavLink, useNavigate, useParams } from "react-router-dom";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { getMockTestSummary, formatMockTestLastAttempt } from "../services/mockTestsStore";
+import { listMockTestsCatalog } from "../services/mockTestsData";
 
 /**
  * Detailed mock test results page.
  * Reads attempt summary from localStorage-backed mockTestsStore by test id.
  */
 
-const TEST_CATALOG = [
-  { id: "react_fundamentals", title: "React Fundamentals", durationMin: 20, maxScore: 20 },
-  { id: "behavioral_star", title: "Behavioral STAR Practice", durationMin: 15, maxScore: 10 },
-  { id: "sql_basics", title: "SQL Basics", durationMin: 25, maxScore: 25 }
-];
+const TEST_CATALOG = listMockTestsCatalog();
 
 function safePercent(score, maxScore) {
   if (!Number.isFinite(score) || !Number.isFinite(maxScore) || maxScore <= 0) return 0;
