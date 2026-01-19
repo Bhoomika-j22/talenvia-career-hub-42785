@@ -6,6 +6,8 @@ import { AppLayout } from "./layout/AppLayout";
 import { HomePage } from "./pages/Home";
 import { ProfilePage } from "./pages/Profile";
 import { MockTestsPage } from "./pages/MockTests";
+import { MockTestRunnerStubPage } from "./pages/MockTestRunnerStub";
+import { MockTestResultsPage } from "./pages/MockTestResults";
 import { ChallengesPage } from "./pages/Challenges";
 import { SettingsPage } from "./pages/Settings";
 import { AboutPage } from "./pages/About";
@@ -30,6 +32,8 @@ function App() {
             <Route index element={<HomePage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/mock-tests" element={<MockTestsPage />} />
+            <Route path="/mock-tests/:id/start" element={<MockTestRunnerStubPage />} />
+            <Route path="/mock-tests/:id/results" element={<MockTestResultsPage />} />
             <Route path="/challenges" element={<ChallengesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/about" element={<AboutPage />} />

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
@@ -29,6 +30,7 @@ function scoreLabel(scoreObj) {
 // PUBLIC_INTERFACE
 export function MockTestsPage() {
   /** Mock tests page showing locally persisted attempts. */
+  const navigate = useNavigate();
   const [selectedTestId, setSelectedTestId] = useState(null);
   const [uiNonce, setUiNonce] = useState(0); // force refresh after localStorage writes
   const [toast, setToast] = useState("");
@@ -100,6 +102,9 @@ export function MockTestsPage() {
 
     setUiNonce((n) => n + 1);
     showToast(`Saved attempt: ${t.title} • ${score}/${t.maxScore}`);
+
+    // After completion, go to detailed results page for this test.
+    navigate(`/mock-tests/${encodeURIComponent(testId)}/results`);
   };
 
   const onClearAll = () => {
@@ -174,7 +179,7 @@ export function MockTestsPage() {
                         </div>
                       </div>
 
-                      <Button variant="primary" onClick={() => setSelectedTestId(t.id)}>
+                      <Button variant="primary" onClick={() => navigate(`/mock-tests/${encodeURIComponent(t.id)}/start`)}>
                         Start
                       </Button>
                     </div>
@@ -220,7 +225,7 @@ export function MockTestsPage() {
                       </div>
                     </div>
 
-                    <Button variant="ghost" onClick={() => setSelectedTestId(r.id)}>
+                    <Button variant="ghost" onClick={() => navigate(`/mock-tests/${encodeURIComponent(r.id)}/start`)}>
                       Details
                     </Button>
                   </div>
