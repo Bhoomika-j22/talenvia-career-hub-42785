@@ -1,18 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../components/ui/Button";
-import { supabase, isSupabaseConfigured } from "../services/supabaseClient";
 
 /**
- * User profile page:
- * - Local-only form state with localStorage persistence (kept as cache/fallback)
+ * User profile page (local-only):
+ * - Local form state with localStorage persistence
  * - Editable avatar (file input + preview)
  * - Skills as removable tags
  * - Professional links with basic URL validation
- * - Save action persists to Supabase tables: profiles, professional_links, skills (when configured + signed in)
  *
  * IMPORTANT:
- * - This page must not reference `process` (or other bundler globals) at runtime.
- * - It relies on `isSupabaseConfigured` from supabaseClient/env for environment detection.
+ * - Supabase has been removed from this frontend. All saves are localStorage-only.
  */
 
 const STORAGE_KEY = "talenvia.profile.v1";
@@ -50,7 +47,7 @@ function trimmedOrEmpty(value) {
 
 // PUBLIC_INTERFACE
 export function ProfilePage() {
-  /** Profile page with editable details and local cache + Supabase persistence on Save. */
+  /** Profile page with editable details and localStorage persistence. */
 
   const fileInputRef = useRef(null);
   const saveNoticeTimerRef = useRef(null);
@@ -78,10 +75,6 @@ export function ProfilePage() {
   const [hasTriedSave, setHasTriedSave] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Used to render a small inline notice separate from the transient "Saved" pill.
-  const [saveBlockingReason, setSaveBlockingReason] = useState(""); // "not_configured" | "not_signed_in" | ""
-
-  // Centralized payload to persist (reused by effect + Save button).
   const persistProfileToLocalStorage = (nextProfile) => {
     try {
       window.localStorage.setItem(
@@ -102,13 +95,11 @@ export function ProfilePage() {
     }
   };
 
-  // Persist on any state change (cache) so refresh retains changes even if Supabase is unavailable.
   useEffect(() => {
     persistProfileToLocalStorage(profile);
   }, [profile]);
 
   useEffect(() => {
-    // Cleanup save notice timer on unmount.
     return () => {
       if (saveNoticeTimerRef.current) window.clearTimeout(saveNoticeTimerRef.current);
     };
@@ -117,11 +108,9 @@ export function ProfilePage() {
   const linkedInInvalid = !isLikelyHttpUrl(profile.linkedInUrl);
   const githubInvalid = !isLikelyHttpUrl(profile.githubUrl);
 
-  // Required fields validation.
   const fullNameMissing = trimmedOrEmpty(profile.fullName).length === 0;
   const emailInvalid = !isValidEmailMinimal(profile.email);
 
-  // Disable Save when invalid (also respects existing URL invalid states so we never "save" invalid links).
   const isSaveDisabled = fullNameMissing || emailInvalid || linkedInInvalid || githubInvalid;
 
   const canAddSkill = profile.skillDraft.trim().length > 0;
@@ -130,7 +119,6 @@ export function ProfilePage() {
     const next = normalizeSkill(profile.skillDraft);
     if (!next) return;
 
-    // Avoid duplicates (case-insensitive).
     const exists = profile.skills.some((s) => s.toLowerCase() === next.toLowerCase());
     if (exists) {
       setProfile((p) => ({ ...p, skillDraft: "" }));
@@ -155,7 +143,6 @@ export function ProfilePage() {
     if (!file) return;
     if (!file.type?.startsWith("image/")) return;
 
-    // Convert to data URL for preview + localStorage cache (small images recommended).
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = typeof reader.result === "string" ? reader.result : "";
@@ -175,10 +162,8 @@ export function ProfilePage() {
   const onSave = async () => {
     setHasTriedSave(true);
     setSaveNotice("");
-    setSaveBlockingReason("");
 
     if (isSaveDisabled) {
-      // Focus first invalid field for keyboard accessibility.
       if (fullNameMissing) {
         document.getElementById("tvProfileFullName")?.focus?.();
       } else if (emailInvalid) {
@@ -191,87 +176,10 @@ export function ProfilePage() {
       return;
     }
 
-    // If Supabase isn't configured, keep local save behavior (no "false negative" here).
-    if (!isSupabaseConfigured || !supabase) {
-      setSaveBlockingReason("not_configured");
-      showNotice("Saved locally.");
-      persistProfileToLocalStorage(profile);
-      return;
-    }
-
     setIsSaving(true);
     try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError) throw userError;
-
-      const userId = userData?.user?.id;
-      if (!userId) {
-        setSaveBlockingReason("not_signed_in");
-        showNotice("Cannot save to cloud.");
-        return;
-      }
-
-      const nowIso = new Date().toISOString();
-
-      // --- Supabase persistence ---
-      // 1) Upsert profiles (one row per user, keyed by user_id)
-      const { error: profileError } = await supabase.from("profiles").upsert(
-        {
-          user_id: userId,
-          full_name: trimmedOrEmpty(profile.fullName),
-          email: trimmedOrEmpty(profile.email),
-          phone_number: trimmedOrEmpty(profile.phone) || null,
-          location: trimmedOrEmpty(profile.location) || null,
-          profile_photo_url: trimmedOrEmpty(profile.photoDataUrl) || null,
-          updated_at: nowIso
-        },
-        { onConflict: "user_id" }
-      );
-      if (profileError) throw profileError;
-
-      // 2) Upsert professional_links (one row per user)
-      // Portfolio is not currently in the UI; send null to match schema.
-      const { error: linksError } = await supabase.from("professional_links").upsert(
-        {
-          user_id: userId,
-          linkedin_url: trimmedOrEmpty(profile.linkedInUrl) || null,
-          github_url: trimmedOrEmpty(profile.githubUrl) || null,
-          portfolio_url: null,
-          updated_at: nowIso
-        },
-        { onConflict: "user_id" }
-      );
-      if (linksError) throw linksError;
-
-      // 3) Sync skills: delete then insert unique skill rows.
-      const { error: deleteSkillsError } = await supabase.from("skills").delete().eq("user_id", userId);
-      if (deleteSkillsError) throw deleteSkillsError;
-
-      const uniqueSkillNames = Array.from(
-        new Set(profile.skills.map((s) => normalizeSkill(s)).filter((s) => !!s).map((s) => s.toLowerCase()))
-      ).map((lower) => {
-        // Preserve a nice-looking value: use the first matching original skill, otherwise use the lowercase value.
-        const original = profile.skills.find((s) => normalizeSkill(s).toLowerCase() === lower) || lower;
-        return normalizeSkill(original);
-      });
-
-      if (uniqueSkillNames.length > 0) {
-        const rows = uniqueSkillNames.map((skillName) => ({
-          user_id: userId,
-          skill_name: skillName
-        }));
-
-        const { error: insertSkillsError } = await supabase.from("skills").insert(rows);
-        if (insertSkillsError) throw insertSkillsError;
-      }
-
-      // Keep localStorage in sync as a UI cache (optional).
       persistProfileToLocalStorage(profile);
-
       showNotice("Saved");
-    } catch (e) {
-      // User-friendly error; avoid leaking internals.
-      showNotice("Could not save profile. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -289,27 +197,12 @@ export function ProfilePage() {
               {saveNotice}
             </div>
           ) : null}
-
-          {saveBlockingReason === "not_configured" ? (
-            <div className="tv-muted tv-small" style={{ marginTop: 10 }}>
-              Cloud save is unavailable because Supabase is not configured for this environment. Your changes are stored
-              locally in this browser.
-            </div>
-          ) : null}
-
-          {saveBlockingReason === "not_signed_in" ? (
-            <div className="tv-muted tv-small" style={{ marginTop: 10 }}>
-              Supabase is configured, but you are not signed in. Sign in to save your profile to the cloud (your changes
-              are still stored locally as a cache).
-            </div>
-          ) : null}
         </div>
 
         <div className="tv-row tv-profileHeaderActions">
           <Button
             variant="primary"
             onClick={() => {
-              // Simple approach: page is always editable; this button can focus the first field.
               const el = document.getElementById("tvProfileFullName");
               el?.focus?.();
             }}
@@ -319,7 +212,6 @@ export function ProfilePage() {
         </div>
       </header>
 
-      {/* Single continuous section (not multiple cards) */}
       <section className="tv-profileSection" aria-label="Profile details">
         <div className="tv-profileTop">
           <div className="tv-profileAvatarBlock">
@@ -355,7 +247,6 @@ export function ProfilePage() {
               ) : null}
             </div>
 
-            {/* Hidden file input for photo */}
             <input
               ref={fileInputRef}
               type="file"
@@ -552,7 +443,6 @@ export function ProfilePage() {
           </div>
         </div>
 
-        {/* Save action is last element in the single-section profile editor */}
         <div className="tv-row" style={{ marginTop: 16, justifyContent: "flex-end" }}>
           <Button
             variant="primary"
