@@ -17,8 +17,14 @@ const env = getEnv();
 const supabaseUrl = env?.supabaseUrl;
 const supabaseKey = env?.supabaseKey;
 
+const hasAnySupabaseEnv = Boolean(
+  (typeof supabaseUrl === "string" && supabaseUrl.trim().length > 0) ||
+    (typeof supabaseKey === "string" && supabaseKey.trim().length > 0)
+);
+
 // PUBLIC_INTERFACE
-export const isSupabaseConfigured = isValidUrl(supabaseUrl) && typeof supabaseKey === "string" && supabaseKey.trim().length > 0;
+export const isSupabaseConfigured =
+  isValidUrl(supabaseUrl) && typeof supabaseKey === "string" && supabaseKey.trim().length > 0;
 /** True when Supabase env vars are present and look valid. */
 
 // PUBLIC_INTERFACE
@@ -32,7 +38,12 @@ export async function supabasePing() {
    * Returns: { ok: boolean, error?: string }
    */
   if (!isSupabaseConfigured || !supabase) {
-    return { ok: false, error: "Supabase is not configured (missing REACT_APP_SUPABASE_URL / REACT_APP_SUPABASE_KEY)." };
+    // Only show "missing" when URL+KEY are truly not provided at all.
+    // If one is present but invalid/missing, it's more likely a config mistake.
+    const msg = hasAnySupabaseEnv
+      ? "Supabase is not configured correctly (invalid or incomplete Supabase URL/KEY)."
+      : "Supabase is not configured (missing Supabase URL/KEY).";
+    return { ok: false, error: msg };
   }
 
   try {
